@@ -1,0 +1,21 @@
+{
+  "name": "rvines",
+  "version": "1.0.0",
+  "description": "This is a fun video app where you can show your creativity.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon/src/index.js" 
+  },
+  "keywords": [
+    "javascript",
+    "nodejs",
+    "MongoDB",
+    "React"
+  ],
+  "author": "Ritwik Ranjan Pathak",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}
