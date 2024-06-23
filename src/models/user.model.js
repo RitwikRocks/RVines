@@ -1,5 +1,5 @@
 import mongoose, { mongo } from "mongoose";
-import bcrypt from "bcrpyt";
+import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
@@ -51,9 +51,9 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-userSchema.pre("save", async function(){
+userSchema.pre("save", async function(next){
     if(! this.isModified("password")) return next()
-    this.password = await bcrypt(this.password, 10);
+    this.password = await bcrypt.hash(this.password, 10);
     next(); //middleware
 });
 // Password Decryption Method
@@ -87,4 +87,5 @@ userSchema.methods.generateRefreshToken = function(){
         }
     )
 }
+console.log("Okk");
 export const User = mongoose.model("User",userSchema);
