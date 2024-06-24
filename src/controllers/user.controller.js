@@ -3,7 +3,7 @@ import {ApiError} from "../utils/apiError.js"
 import {User} from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import multer from "multer";
+import { cookieOptions } from "../constants.js";
 /*
 Register User Algorithm
 1. Get the user details from Frontend
@@ -12,10 +12,29 @@ Register User Algorithm
 4. File - check for image and check for avatar
 5. Upload them to the cloudinary
 6. Create the entry of the object in the database
-7. Remove the password and refresh token from the response
+7. Remove the password and refresh token from the responsep
 8. check for user creation
 9. Return the response
 */
+
+// Function to generate the token
+
+const generateAccessAndRefreshToken = async (userId)=>{
+    try {
+        const user = await User.findById(userId);
+        const accessToken = await user.generateAccessToken();
+        const refreshToken =await user.generateRefreshToken();
+        user.refreshToken = refreshToken;
+        await user.save({validBeforeSave:false});
+
+        return {accessToken,refreshToken};
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while Generating Tokens");
+    }
+}
+
+
+
 const registerUser = asyncHandler( async(req,res) =>{
     // 1 get user data from frontend
     const {username, email,fullName,password}=req.body;
@@ -67,4 +86,48 @@ const registerUser = asyncHandler( async(req,res) =>{
     return res.send(201).json(new ApiResponse(200, createdUser, "User Created"));
 })
 
-export {registerUser};
+const loginUser = asyncHandler( async(req,res)=>{
+       const {username, email, password} = req.body;
+       if(!(username || email)){
+         throw new ApiError(400, "UserName or Email Required");
+       }
+       //console.table([username,email,password]);
+      try {
+         const user = await User.findOne({ $or:[{username}, {email}]});
+         if(!user){
+          throw new ApiError(404, "User Does not Exit");
+         }
+
+         const passwordValid = await user.isPasswordCorrect(String(password));
+         if(!passwordValid){
+          throw new ApiError(401, "Password is Incorrect");
+         }
+        
+         const {accessToken,refreshToken} = await generateAccessAndRefreshToken(user._id);
+         const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+         res.status(200)
+         .cookie("accessToken", accessToken, cookieOptions)
+         .cookie("refreshToken", refreshToken, cookieOptions)
+         .json(
+            new ApiResponse(
+                200,
+                {
+                    user:loggedInUser, accessToken, refreshToken
+                },
+                "User Logged In Successfully"
+            )
+         );
+
+      } catch (error) {
+        console.log(error);
+         throw new ApiError(500, "Something Went Wrong While Connecting to database");
+      }
+})
+
+
+
+export {
+    registerUser,
+    loginUser,
+};
