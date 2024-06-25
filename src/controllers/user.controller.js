@@ -125,9 +125,36 @@ const loginUser = asyncHandler( async(req,res)=>{
       }
 })
 
-
+const logoutUser = asyncHandler( async(req,res)=>{
+    const _id = req.user._id;
+   try {
+     const user = await User.findByIdAndUpdate(_id,
+         {
+             $set:{
+                 refreshToken:undefined
+             }
+         },
+         {
+             new:true,
+         }
+     )
+     return res.status(200)
+     .clearCookie("accessToken", cookieOptions)
+     .clearCookie("refreshToken", cookieOptions)
+     .json(
+         new ApiResponse(
+             200,
+             {},
+             "User has been logout Successfully"
+         )
+     )
+   } catch (error) {
+     throw new ApiError(500, "Logout Failed");
+   }
+})
 
 export {
     registerUser,
     loginUser,
+    logoutUser,
 };
